@@ -1,0 +1,40 @@
+# =============================================================================
+# gsolver Experiment Parameters
+# =============================================================================
+# This file contains optimized hyperparameters for different trajectory types.
+# Parameters were learned/tuned for best performance on each dataset.
+#
+# Qc_diag: Continuous-time power spectral density diagonal for GP motion prior
+#          [tx, ty, tz, rx, ry, rz] - larger values = less smoothing
+#
+# num_iterations: Number of GBP iterations for optimization
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Charuco/AprilTag Experiments (Indoor marker-based tracking)
+# -----------------------------------------------------------------------------
+printing_room:
+  description: "Indoor room with Charuco board markers"
+  qc_diag: [1.22596, 3.14923, 2.49061, 0.539503, 1.88673, 0.0562069]
+  num_iterations: 50
+  
+# -----------------------------------------------------------------------------
+# Synthetic Trajectory Experiments
+# -----------------------------------------------------------------------------
+sphere:
+  description: "Spherical trajectory (uniform sampling on sphere surface)"
+  qc_diag: [0.0377749, 0.0255242, 0.0204898, 0.00011784, 0.00011784, 0.00011784]
+  num_iterations: 100
+
+helix:
+  description: "Helical trajectory (spiral motion)"
+  qc_diag: [0.00514381, 0.00430491, 0.00550036, 0, 0, 0.000175324]
+  num_iterations: 100
+
+# -----------------------------------------------------------------------------
+# Default Parameters (fallback for unknown trajectories)
+# -----------------------------------------------------------------------------
+default:
+  description: "Default parameters for unknown trajectory types"
+  qc_diag: [1.0, 1.0, 1.0, 0.5, 0.5, 0.5]
+  num_iterations: 50

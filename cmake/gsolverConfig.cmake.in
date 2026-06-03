@@ -1,0 +1,11 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+# Find required dependencies
+find_dependency(Eigen3)
+find_dependency(OpenMP)
+
+include("${CMAKE_CURRENT_LIST_DIR}/gsolverTargets.cmake")
+
+check_required_components(gsolver)
