@@ -19,8 +19,10 @@ set(GSOLVER_SOURCES
     src/graph/types/variables/se3_posevel.cpp
     
     # Factor types
+    src/graph/types/factors/se3_point_equality.cpp
     src/graph/types/factors/se3_posevel_gp.cpp
     src/graph/types/factors/se3_posevel_point.cpp
+    src/graph/types/factors/se3_posevel_stereo_point.cpp
     src/graph/types/factors/se3_posevel_pose.cpp
     src/graph/types/factors/se3_posevel_posevel.cpp
     src/graph/types/factors/se3_posevel_prior.cpp

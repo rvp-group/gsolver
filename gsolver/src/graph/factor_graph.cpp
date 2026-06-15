@@ -30,6 +30,22 @@ namespace gsolver {
     }
   }
 
+  template <typename FactorType>
+  void FactorGraph::addFactorNode(const std::shared_ptr<FactorType>& factor_node,
+                                  std::vector<std::shared_ptr<VariableNodeBase>> variable_nodes) {
+    factor_nodes_.push_back(factor_node);
+
+    if (variable_nodes.size() != factor_node->NumberOfEdges_) {
+      throw std::runtime_error("Number of variable nodes does not match the number of edges in the factor node: " +
+                               std::to_string(variable_nodes.size()) + " != " + std::to_string(factor_node->NumberOfEdges_));
+    }
+
+    using FactorGraphHelper = typename FactorGraphHelperBuilder<FactorType, typename FactorType::VariableTypes>::type;
+    for (int i = 0; i < factor_node->NumberOfEdges_; ++i) {
+      FactorGraphHelper::createEdge(i, factor_node, variable_nodes[i]);
+    }
+  }
+
   std::shared_ptr<VariableNodeBase> FactorGraph::getVariableNode(const std::string& id) {
     for (const auto& variable_node : variable_nodes_) {
       if (variable_node->id_ == id) {

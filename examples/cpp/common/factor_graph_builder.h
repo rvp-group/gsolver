@@ -30,13 +30,17 @@
 #include <vector>
 
 #include "data_types.h"
+#include "logger.h"
 
 // gsolver library
 #include <gsolver/graph/factor_graph.h>
+#include <gsolver/graph/types/factors/se3_point_equality.h>
 #include <gsolver/graph/types/factors/se3_posevel_gp.h>
 #include <gsolver/graph/types/factors/se3_posevel_pose.h>
 #include <gsolver/graph/types/factors/se3_posevel_posevel.h>
 #include <gsolver/graph/types/factors/se3_posevel_prior.h>
+#include <gsolver/graph/types/factors/se3_posevel_stereo_point.h>
+#include <gsolver/graph/types/variables/se3_point.h>
 #include <gsolver/graph/types/variables/se3_pose.h>
 #include <gsolver/graph/types/variables/se3_posevel.h>
 #include <gsolver/maths/geometry3d.h>
@@ -324,6 +328,128 @@ namespace examples {
     std::string factor_id = "PRIOR_ANCHOR_" + timestampToString(first_node->timestamp_);
     auto factor           = std::make_shared<SE3PoseVelPrior>(factor_id, pose, cov);
     factor_graph.addFactorNode(factor, {first_node->id_});
+  }
+
+  // ============================================================================
+  // Stereo SLAM - Variable and Factor Builders
+  // ============================================================================
+
+  /**
+   * @brief Generate a landmark variable ID with a robot-specific suffix.
+   * Format: "LANDMARK_<id>_R<robot_id>"
+   */
+  inline std::string landmarkRobotId(size_t landmark_id, int robot_id) {
+    return "LANDMARK_" + std::to_string(landmark_id) + "_R" + std::to_string(robot_id);
+  }
+
+  /**
+   * @brief Add 3D landmark variables for one robot's observations.
+   *
+   * Each landmark gets ID "LANDMARK_<id>_R<robot_id>" so that landmarks from
+   * different robots are distinct nodes that can later be linked by equality factors.
+   *
+   * @param factor_graph Target factor graph
+   * @param landmarks    Initial landmark positions from g2o file
+   * @param robot_id     Robot identifier appended to variable IDs
+   */
+  inline void add_landmark_variable_nodes(FactorGraph& factor_graph,
+                                          const std::vector<LandmarkInit>& landmarks,
+                                          int robot_id) {
+    for (const auto& lm : landmarks) {
+      std::string var_id = landmarkRobotId(lm.landmark_id, robot_id);
+      Eigen::Matrix<double, 3, 3> sigma = lm.covariance + 1e-6 * Eigen::Matrix<double, 3, 3>::Identity();
+      auto variable = std::make_shared<SE3Point>(var_id, lm.position, sigma);
+      factor_graph.addVariableNode(variable);
+    }
+  }
+
+  /**
+   * @brief Add stereo camera observation factors.
+   *
+   * Creates one SE3PoseVelStereoPoint factor per observation, connecting a pose
+   * variable to the corresponding landmark variable.
+   *
+   * @param factor_graph Target factor graph (must contain pose and landmark variables)
+   * @param stereo       Stereo observations from g2o file
+   * @param camera       Camera intrinsic parameters
+   * @param robot_id     Robot identifier used to look up landmark variable IDs
+   */
+  inline void add_stereo_factor_nodes(FactorGraph& factor_graph,
+                                      const std::vector<StereoMeas>& stereo,
+                                      const CameraParams& camera,
+                                      int robot_id) {
+    const Eigen::Matrix<double, 3, 4> P = camera.projectionMatrix();
+    const double                      b = camera.baseline();
+
+    for (const auto& obs : stereo) {
+      Eigen::Matrix<double, 3, 3> cov = obs.covariance();
+      Eigen::Vector3d             z   = obs.stereoObservation();
+
+      std::string factor_id   = "STEREO_" + timestampToString(obs.timestamp) + "_" + std::to_string(obs.landmark_id);
+      std::string pose_id     = poseId(obs.timestamp);
+      std::string landmark_id = landmarkRobotId(obs.landmark_id, robot_id);
+
+      auto factor = std::make_shared<SE3PoseVelStereoPoint>(factor_id, z, P, b, cov);
+      factor_graph.addFactorNode(factor, {pose_id, landmark_id});
+    }
+  }
+
+  /**
+   * @brief Add landmark equality factors between robots for shared landmarks.
+   *
+   * For each landmark observed by more than one robot, adds a tight
+   * SE3PointEquality factor between every pair of robot-specific landmark nodes.
+   * This enforces that both robots agree on the landmark's 3D position.
+   *
+   * @param graphs Vector of factor graphs, one per robot (indexed by robot_id)
+   */
+  inline void add_landmark_equality_factor_nodes(std::vector<FactorGraph*>& graphs) {
+    const int num_robots = static_cast<int>(graphs.size());
+
+    // Build map: landmark_id → list of robot_ids that observed it
+    std::map<size_t, std::vector<int>> landmark_to_robots;
+    for (int rid = 0; rid < num_robots; ++rid) {
+      for (const auto& var : graphs[rid]->variable_nodes_) {
+        const std::string& id = var->id_;
+        const std::string prefix = "LANDMARK_";
+        const std::string suffix_marker = "_R";
+        if (id.find(prefix) == std::string::npos)
+          continue;
+        size_t r_pos = id.rfind(suffix_marker);
+        if (r_pos == std::string::npos)
+          continue;
+        size_t lm_id = std::stoul(id.substr(prefix.size(), r_pos - prefix.size()));
+        landmark_to_robots[lm_id].push_back(rid);
+      }
+    }
+
+    int eq_count = 0;
+    for (const auto& [lm_id, robot_ids] : landmark_to_robots) {
+      if (robot_ids.size() < 2)
+        continue;
+      for (size_t i = 0; i < robot_ids.size(); ++i) {
+        for (size_t j = i + 1; j < robot_ids.size(); ++j) {
+          int r0 = robot_ids[i];
+          int r1 = robot_ids[j];
+
+          std::string var0_id   = landmarkRobotId(lm_id, r0);
+          std::string var1_id   = landmarkRobotId(lm_id, r1);
+          std::string factor_id = "LANDMARK_EQ_" + std::to_string(lm_id) +
+                                  "_R" + std::to_string(r0) + "_R" + std::to_string(r1);
+
+          Eigen::Matrix<double, 3, 3> tight_cov = 1e-6 * Eigen::Matrix<double, 3, 3>::Identity();
+
+          auto var0   = graphs[r0]->getVariableNode(var0_id);
+          auto var1   = graphs[r1]->getVariableNode(var1_id);
+          auto factor = std::make_shared<SE3PointEquality>(factor_id, tight_cov);
+          graphs[r0]->addFactorNode(factor, std::vector<std::shared_ptr<VariableNodeBase>>{var0, var1});
+          ++eq_count;
+        }
+      }
+    }
+
+    if (eq_count > 0)
+      LOG_INFO("Added {} landmark equality factors across {} robots", eq_count, num_robots);
   }
 
 } // namespace examples

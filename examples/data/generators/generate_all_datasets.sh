@@ -8,17 +8,18 @@
 #
 # Output structure:
 #   datasets/
-#   ├── gt/                    # Ground truth trajectories
-#   │   ├── helix_1hz.tum
-#   │   ├── helix_100hz.tum
-#   │   ├── sphere_1hz.tum
-#   │   └── sphere_100hz.tum
-#   ├── prior/                 # Prior factor experiments
-#   │   ├── configs_1hz/       # Configuration files
-#   │   └── trajectories_1hz/  # Generated .g2o files
-#   └── pgo/                   # Pose graph optimization experiments
-#       ├── configs_1hz/
-#       └── trajectories_1hz/
+#   └── synthetic/
+#       ├── gt/                    # Ground truth trajectories
+#       │   ├── helix_1hz.tum
+#       │   ├── helix_100hz.tum
+#       │   ├── sphere_1hz.tum
+#       │   └── sphere_100hz.tum
+#       ├── prior/                 # Prior factor experiments
+#       │   ├── configs_1hz/       # Configuration files
+#       │   └── trajectories_1hz/  # Generated .g2o files
+#       └── pgo/                   # Pose graph optimization experiments
+#           ├── configs_1hz/
+#           └── trajectories_1hz/
 #
 # Usage:
 #   ./generate_all_datasets.sh [--quick]
@@ -40,7 +41,7 @@ set -e  # Exit on error
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="${SCRIPT_DIR}/../../../build"
 EXECUTABLE="${BUILD_DIR}/examples/cpp/data_generator"
-OUTPUT_DIR="${SCRIPT_DIR}/../datasets"
+OUTPUT_DIR="${SCRIPT_DIR}/../datasets/synthetic"
 
 # Trajectory types (no torus)
 SHAPES=("helix" "sphere")

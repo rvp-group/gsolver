@@ -32,6 +32,64 @@ helix:
   num_iterations: 100
 
 # -----------------------------------------------------------------------------
+# KITTI Odometry Sequences (Stereo visual SLAM)
+# -----------------------------------------------------------------------------
+kitti_00:
+  description: "KITTI sequence 00 - urban, large loop"
+  qc_diag: [2.97179, 0.162879, 2.52845, 0.0961251, 0.037872, 0.0594821]
+  num_iterations: 10
+
+kitti_01:
+  description: "KITTI sequence 01 - highway"
+  qc_diag: [5.34257, 0.174068, 4.18265, 0.02494, 0.00277145, 0.0171653]
+  num_iterations: 10
+
+kitti_02:
+  description: "KITTI sequence 02 - residential, large loop"
+  qc_diag: [4.07849, 0.384486, 2.29617, 0.0746609, 0.0137902, 0.0453407]
+  num_iterations: 10
+
+kitti_03:
+  description: "KITTI sequence 03 - country road"
+  qc_diag: [0.396832, 0.15202, 0.734474, 0.0633395, 0.01088, 0.0500122]
+  num_iterations: 10
+
+kitti_04:
+  description: "KITTI sequence 04 - country road (short)"
+  qc_diag: [0.137565, 0.182501, 0.164233, 0.02091, 0.00122519, 0.0186855]
+  num_iterations: 10
+
+kitti_05:
+  description: "KITTI sequence 05 - urban, medium loop"
+  qc_diag: [0.732725, 0.0825203, 1.1062, 0.0456018, 0.0135428, 0.0337611]
+  num_iterations: 10
+
+kitti_06:
+  description: "KITTI sequence 06 - urban"
+  qc_diag: [1.48638, 0.0364284, 1.2866, 0.0283883, 0.00942419, 0.0142161]
+  num_iterations: 10
+
+kitti_07:
+  description: "KITTI sequence 07 - urban, small loop"
+  qc_diag: [0.96396, 0.0754151, 1.16582, 0.0377496, 0.0228145, 0.0370944]
+  num_iterations: 10
+
+kitti_08:
+  description: "KITTI sequence 08 - urban, no loop"
+  qc_diag: [2.2576, 0.584282, 2.36313, 0.0535896, 0.0185522, 0.0447645]
+  num_iterations: 10
+
+kitti_09:
+  description: "KITTI sequence 09 - rural"
+  qc_diag: [2.2576, 0.584282, 2.36313, 0.0535896, 0.0185522, 0.0447645]
+  num_iterations: 10
+
+kitti_10:
+  description: "KITTI sequence 10 - rural"
+  qc_diag: [3.021, 0.19798, 1.96119, 0.0792703, 0.0188917, 0.0637193]
+  num_iterations: 10
+
+# -----------------------------------------------------------------------------
 # Default Parameters (fallback for unknown trajectories)
 # -----------------------------------------------------------------------------
 default:

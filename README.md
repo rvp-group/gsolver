@@ -49,6 +49,37 @@ gsolver/
 
 ## 🛠️ Building
 
+### Docker (Recommended)
+
+The easiest way to get started is via Docker, which handles all dependencies and provides X11 forwarding for visualization.
+
+**Prerequisites:**
+- [Docker](https://docs.docker.com/engine/install/) installed
+- (Optional) [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) for GPU acceleration
+
+**Build the image and start the container:**
+```bash
+./docker-run.sh
+```
+
+This script builds the `gsolver` Docker image (first run only) and launches the container with:
+- the repository mounted at `/workspace`
+- X11 forwarding configured for visualization
+- GPU passthrough if the NVIDIA runtime is available
+
+Once inside the container, build the project:
+```bash
+mkdir build && cd build
+cmake .. -DGSOLVER_BUILD_EXAMPLES=ON -DGSOLVER_BUILD_PYTHON=ON
+make -j$(nproc)
+```
+
+All subsequent commands in this README assume you are running inside the container from `/workspace`.
+
+---
+
+### Native Build
+
 ### Prerequisites
 
 - **C++17** compatible compiler (GCC 9+, Clang 10+)
@@ -121,9 +152,9 @@ cd ../examples/data/generators
 ```
 
 This creates:
-- `datasets/gt/` - Ground truth trajectories (TUM format)
-- `datasets/pgo/` - Pose Graph Optimization datasets (g2o format)
-- `datasets/prior/` - Prior factor experiment datasets
+- `datasets/synthetic/gt/` - Ground truth trajectories (TUM format)
+- `datasets/synthetic/pgo/` - Pose Graph Optimization datasets (g2o format)
+- `datasets/synthetic/prior/` - Prior factor experiment datasets
 
 ### Generate Individual Dataset
 
@@ -138,10 +169,11 @@ This creates:
 
 ### Learn GP Hyperparameters
 
-To compute optimal `qc_diag` values for a trajectory:
+To compute optimal `qc_diag` values for a trajectory, provide a ground-truth TUM file
+(`timestamp tx ty tz qx qy qz qw`, one pose per line):
 
 ```bash
-./build/examples/cpp/gp_hyperparam_trainer examples/data/datasets/gt/helix_1hz.g2o
+./build/examples/cpp/gp_hyperparam_trainer examples/data/datasets/synthetic/gt/sphere_100hz.tum
 ```
 
 Output:
@@ -163,13 +195,14 @@ Add these values to `examples/config/experiment_params.yaml`.
 | `hyperparam_ablation_experiment` | Qc hyperparameter sensitivity analysis |
 | `charuco_experiment_ba` | Bundle Adjustment on Charuco datasets |
 | `charuco_experiment_islam` | Incremental SLAM on Charuco datasets |
+| `stereo_visual` | Stereo visual Bundle Adjustment (single-robot and multi-robot) |
 
 ### C++ Experiments
 
 **Pose Graph Optimization:**
 ```bash
 ./build/examples/cpp/pgo_experiment \
-    examples/data/datasets/pgo/trajectories_1hz/noise_ig1.0_n0.001_helix.g2o \
+    examples/data/datasets/synthetic/pgo/trajectories_1hz/noise_ig1.0_n0.001_helix.g2o \
     ./tmp/pgo_result.tum \
     helix \
     -visualize
@@ -178,7 +211,7 @@ Add these values to `examples/config/experiment_params.yaml`.
 **Prior Experiment:**
 ```bash
 ./build/examples/cpp/prior_experiment \
-    examples/data/datasets/prior/trajectories_1hz/noise_ig1.0_n0.001_helix.g2o \
+    examples/data/datasets/synthetic/prior/trajectories_1hz/noise_ig1.0_n0.001_helix.g2o \
     ./tmp/prior_result.tum \
     helix \
     -visualize
@@ -205,9 +238,30 @@ Add these values to `examples/config/experiment_params.yaml`.
 **Hyperparameter Ablation:**
 ```bash
 ./build/examples/cpp/hyperparam_ablation_experiment \
-    examples/data/datasets/pgo/trajectories_1hz/noise_ig1.0_n0.001_helix.g2o \
+    examples/data/datasets/synthetic/pgo/trajectories_1hz/noise_ig1.0_n0.001_helix.g2o \
     ./tmp/ablation_results/ \
     helix \
+    -visualize
+```
+
+**Stereo Visual Bundle Adjustment — Multi-Robot:**
+```bash
+./build/examples/cpp/stereo_visual \
+    examples/data/datasets/stereo_visual/multirobot/06.g2o \
+    examples/data/datasets/stereo_visual/gt/06.tum \
+    ./tmp/stereo_visual_result.tum \
+    kitti_05 \
+    8 \
+    -visualize
+```
+
+**Stereo Visual Bundle Adjustment — Rolling Shutter:**
+```bash
+./build/examples/cpp/stereo_visual \
+    examples/data/datasets/stereo_visual/rolling_shutter/kitti_06_0.1.g2o \
+    examples/data/datasets/stereo_visual/gt/06.tum \
+    ./tmp/stereo_visual_result.tum \
+    kitti_05 \
     -visualize
 ```
 
@@ -216,7 +270,7 @@ Add these values to `examples/config/experiment_params.yaml`.
 **Pose Graph Optimization:**
 ```bash
 python examples/python/apps/pgo_experiment.py \
-    examples/data/datasets/pgo/trajectories_1hz/noise_ig1.0_n0.001_helix.g2o \
+    examples/data/datasets/synthetic/pgo/trajectories_1hz/noise_ig1.0_n0.001_helix.g2o \
     ./tmp/pgo_result.tum \
     helix \
     -visualize
@@ -225,7 +279,7 @@ python examples/python/apps/pgo_experiment.py \
 **Prior Experiment:**
 ```bash
 python examples/python/apps/prior_experiment.py \
-    examples/data/datasets/prior/trajectories_1hz/noise_ig1.0_n0.001_helix.g2o \
+    examples/data/datasets/synthetic/prior/trajectories_1hz/noise_ig1.0_n0.001_helix.g2o \
     ./tmp/prior_result.tum \
     helix \
     -visualize

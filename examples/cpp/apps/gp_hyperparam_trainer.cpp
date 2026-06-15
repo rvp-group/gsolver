@@ -4,21 +4,20 @@
  *
  * This tool computes the optimal Qc diagonal values for GP motion priors by
  * analyzing the acceleration statistics of a given trajectory:
- * 1. Loads poses from a g2o file
+ * 1. Loads poses from a TUM file (timestamp tx ty tz qx qy qz qw)
  * 2. Computes velocities between consecutive poses
  * 3. Computes accelerations from velocity changes
  * 4. Outputs mean and variance of accelerations (Qc_diag = variance)
  *
  * The output variance values can be used as qc_diag in the experiment config.
  *
- * Usage: ./gp_hyperparam_trainer <input.g2o>
+ * Usage: ./gp_hyperparam_trainer <input.tum>
  */
 
 #include <fstream>
+#include <sstream>
 
 // Project utilities
-#include "../common/data_types.h"
-#include "../common/g2o_parser.h"
 #include "../common/logger.h"
 
 // gsolver library
@@ -26,6 +25,40 @@
 
 using namespace gsolver;
 using namespace examples;
+
+struct TUMPose {
+  double timestamp;
+  Eigen::Isometry3d pose;
+};
+
+static std::vector<TUMPose> loadTUMPoses(const std::string& path) {
+  std::vector<TUMPose> poses;
+  std::ifstream file(path);
+  if (!file) {
+    LOG_ERROR("Cannot open TUM file: {}", path);
+    return poses;
+  }
+  std::string line;
+  while (std::getline(file, line)) {
+    if (line.empty() || line[0] == '#')
+      continue;
+    std::istringstream iss(line);
+    double t, tx, ty, tz, qx, qy, qz, qw;
+    if (!(iss >> t >> tx >> ty >> tz >> qx >> qy >> qz >> qw)) {
+      LOG_WARN("Skipping malformed line: {}", line);
+      continue;
+    }
+    Eigen::Quaterniond q(qw, qx, qy, qz);
+    q.normalize();
+    TUMPose p;
+    p.timestamp            = t;
+    p.pose                 = Eigen::Isometry3d::Identity();
+    p.pose.translation()   = Eigen::Vector3d(tx, ty, tz);
+    p.pose.linear()        = q.toRotationMatrix();
+    poses.push_back(p);
+  }
+  return poses;
+}
 
 // ============================================================================
 // Main
@@ -36,7 +69,7 @@ int main(int argc, char* argv[]) {
 
   // ======================= Parse Command Line Arguments =======================
   if (argc < 2) {
-    LOG_ERROR("Usage: {} <input.g2o>", argv[0]);
+    LOG_ERROR("Usage: {} <input.tum>", argv[0]);
     LOG_INFO("  Analyzes trajectory to compute optimal qc_diag values for GP priors");
     return 1;
   }
@@ -54,11 +87,7 @@ int main(int argc, char* argv[]) {
   // ======================= Load Data ==========================================
   LOG_STEP(1, 4, "Loading data from: {}", input_path);
 
-  std::vector<PoseInit> poses;
-  std::vector<OdometryMeas> odometry;
-  std::vector<PriorMeas> priors;
-  std::vector<LandmarkMeas> landmarks;
-  parseG2OFile(input_path, poses, odometry, priors, landmarks);
+  std::vector<TUMPose> poses = loadTUMPoses(input_path);
 
   if (poses.size() < 3) {
     LOG_ERROR("Need at least 3 poses to compute accelerations, got {}", poses.size());
@@ -98,7 +127,6 @@ int main(int argc, char* argv[]) {
     const Eigen::Matrix<double, 6, 1> velocity_before = velocities[i];
     const Eigen::Matrix<double, 6, 1> velocity_after  = velocities[i + 1];
 
-    // Adjoint transformation for velocity in body frame
     Eigen::Matrix3d R                       = pose_before.linear().transpose() * pose_after.linear();
     Eigen::Matrix<double, 6, 6> adj         = Eigen::Matrix<double, 6, 6>::Zero();
     adj.block<3, 3>(0, 0)                   = R;
@@ -113,14 +141,11 @@ int main(int argc, char* argv[]) {
   // ======================= Compute Statistics =================================
   LOG_STEP(4, 4, "Computing acceleration statistics...");
 
-  // Compute mean
   Eigen::Matrix<double, 6, 1> mean = Eigen::Matrix<double, 6, 1>::Zero();
-  for (const auto& accel : accelerations) {
+  for (const auto& accel : accelerations)
     mean += accel;
-  }
   mean /= static_cast<double>(accelerations.size());
 
-  // Compute variance (unbiased estimator with N-1)
   Eigen::Matrix<double, 6, 1> variance = Eigen::Matrix<double, 6, 1>::Zero();
   for (const auto& accel : accelerations) {
     Eigen::Matrix<double, 6, 1> diff = accel - mean;
@@ -133,14 +158,10 @@ int main(int argc, char* argv[]) {
 
   LOG_INFO("Acceleration mean:     [{}, {}, {}, {}, {}, {}]", mean(0), mean(1), mean(2), mean(3), mean(4), mean(5));
   LOG_INFO("Acceleration variance: [{}, {}, {}, {}, {}, {}]",
-           variance(0),
-           variance(1),
-           variance(2),
-           variance(3),
-           variance(4),
-           variance(5));
+           variance(0), variance(1), variance(2), variance(3), variance(4), variance(5));
   LOG_INFO("Suggested qc_diag for config file:");
-  LOG_INFO("  qc_diag: [{}, {}, {}, {}, {}, {}]", variance(0), variance(1), variance(2), variance(3), variance(4), variance(5));
+  LOG_INFO("  qc_diag: [{}, {}, {}, {}, {}, {}]",
+           variance(0), variance(1), variance(2), variance(3), variance(4), variance(5));
 
   LOG_SECTION("Done");
   return 0;

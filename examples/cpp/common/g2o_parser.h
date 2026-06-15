@@ -79,4 +79,63 @@ namespace examples {
     parseG2OFile(filename, poses, odometry, priors, landmarks);
   }
 
+  /**
+   * @brief Parse a stereo-SLAM G2O file.
+   *
+   * Supported tokens:
+   * - CAMERA_PARAMS : stereo camera intrinsics
+   * - VERTEX_SE3    : initial pose guesses
+   * - LANDMARK_3D   : 3D landmark positions
+   * - EDGE_STEREO   : stereo pixel observations
+   * - EDGE_PRIOR_SE3: absolute pose priors
+   *
+   * @param filename  Path to the G2O file
+   * @param camera    Output camera parameters
+   * @param poses     Output initial poses
+   * @param landmarks Output initial landmark positions
+   * @param stereo    Output stereo observations
+   * @param priors    Output absolute pose priors
+   */
+  inline void parseStereoG2OFile(const std::string& filename,
+                                 CameraParams& camera,
+                                 std::vector<PoseInit>& poses,
+                                 std::vector<LandmarkInit>& landmarks,
+                                 std::vector<StereoMeas>& stereo,
+                                 std::vector<PriorMeas>& priors) {
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+      LOG_ERROR("Could not open stereo g2o file: {}", filename);
+      return;
+    }
+
+    std::string line;
+    while (std::getline(file, line)) {
+      std::istringstream ss(line);
+      std::vector<std::string> tokens;
+      std::string token;
+      while (ss >> token)
+        tokens.push_back(token);
+
+      if (tokens.empty())
+        continue;
+
+      if (tokens[0] == "CAMERA_PARAMS") {
+        camera = CameraParams(tokens);
+      } else if (tokens[0] == "VERTEX_SE3") {
+        poses.emplace_back(tokens);
+      } else if (tokens[0] == "LANDMARK_3D") {
+        landmarks.emplace_back(tokens);
+      } else if (tokens[0] == "EDGE_STEREO") {
+        stereo.emplace_back(tokens);
+      } else if (tokens[0] == "EDGE_PRIOR_SE3") {
+        priors.emplace_back(tokens);
+      }
+    }
+
+    LOG_DEBUG("Stereo g2o: {} poses, {} landmarks, {} observations, {} priors",
+              poses.size(), landmarks.size(), stereo.size(), priors.size());
+    LOG_DEBUG("Camera: fx={:.2f} fy={:.2f} cx={:.2f} cy={:.2f} baseline={:.4f}",
+              camera.fx, camera.fy, camera.cx, camera.cy, camera.baseline());
+  }
+
 } // namespace examples

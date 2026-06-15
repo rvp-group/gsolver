@@ -42,7 +42,8 @@ namespace gsolver {
   template class FactorNode<6, SE3PoseVel, SE3PoseVel>;  // SE3PoseVelPoseVel
   template class FactorNode<12, SE3PoseVel, SE3PoseVel>; // SE3PoseVelGP
   template class FactorNode<6, SE3PoseVel, SE3Pose>;     // SE3PoseVelPose
-  template class FactorNode<3, SE3PoseVel, SE3Point>;    // SE3PoseVelPoint
+  template class FactorNode<3, SE3PoseVel, SE3Point>;    // SE3PoseVelPoint / SE3PoseVelStereoPoint
+  template class FactorNode<3, SE3Point, SE3Point>;      // SE3PointEquality
 
   // =============================================================================
   // FactorGraph::addVariableNode Instantiations
@@ -60,5 +61,8 @@ namespace gsolver {
   template void FactorGraph::addFactorNode<SE3PoseVelGP>(const std::shared_ptr<SE3PoseVelGP>&, std::vector<std::string>);
   template void FactorGraph::addFactorNode<SE3PoseVelPose>(const std::shared_ptr<SE3PoseVelPose>&, std::vector<std::string>);
   template void FactorGraph::addFactorNode<SE3PoseVelPoint>(const std::shared_ptr<SE3PoseVelPoint>&, std::vector<std::string>);
+  template void FactorGraph::addFactorNode<SE3PoseVelStereoPoint>(const std::shared_ptr<SE3PoseVelStereoPoint>&, std::vector<std::string>);
+  template void FactorGraph::addFactorNode<SE3PointEquality>(const std::shared_ptr<SE3PointEquality>&, std::vector<std::string>);
+  template void FactorGraph::addFactorNode<SE3PointEquality>(const std::shared_ptr<SE3PointEquality>&, std::vector<std::shared_ptr<VariableNodeBase>>);
 
 } // namespace gsolver

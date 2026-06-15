@@ -45,6 +45,13 @@ target_link_libraries(charuco_experiment_ba PRIVATE gsolver::gsolver yaml-cpp re
 target_include_directories(charuco_experiment_ba PRIVATE ${EXAMPLES_COMMON_INCLUDES})
 
 # -----------------------------------------------------------------------------
+# Stereo Visual SLAM (single- and multi-robot)
+# -----------------------------------------------------------------------------
+add_executable(stereo_visual apps/stereo_visual.cpp)
+target_link_libraries(stereo_visual PRIVATE gsolver::gsolver yaml-cpp rerun_sdk)
+target_include_directories(stereo_visual PRIVATE ${EXAMPLES_COMMON_INCLUDES})
+
+# -----------------------------------------------------------------------------
 # GP Hyperparameter Trainer
 # -----------------------------------------------------------------------------
 add_executable(gp_hyperparam_trainer apps/gp_hyperparam_trainer.cpp)

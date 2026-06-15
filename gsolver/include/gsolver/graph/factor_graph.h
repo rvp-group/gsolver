@@ -17,6 +17,12 @@ namespace gsolver {
     template <typename FactorType>
     void addFactorNode(const std::shared_ptr<FactorType>& factor_node, std::vector<std::string> variable_ids);
 
+    // Overload that accepts variable nodes directly — needed when variables live
+    // in different factor graphs (e.g. inter-robot landmark equality factors).
+    template <typename FactorType>
+    void addFactorNode(const std::shared_ptr<FactorType>& factor_node,
+                       std::vector<std::shared_ptr<VariableNodeBase>> variable_nodes);
+
     std::shared_ptr<VariableNodeBase> getVariableNode(const std::string& id);
 
     std::shared_ptr<FactorNodeBase> getFactorNode(const std::string& id);

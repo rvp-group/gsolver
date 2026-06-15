@@ -1,0 +1,8 @@
+# Build artifacts
+build/
+
+# Temporary experiment outputs
+tmp/
+
+# Generated synthetic datasets (recreate with examples/data/generators/generate_all_datasets.sh)
+examples/data/datasets/synthetic/
