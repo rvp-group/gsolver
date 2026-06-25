@@ -7,7 +7,7 @@ name = "gsolver"
 version = "0.1.0"
 description = "Gaussian Belief Propagation SLAM Library"
 readme = "README.md"
-license = {text = "MIT"}
+license = {text = "BSD-3-Clause"}
 requires-python = ">=3.8"
 authors = [
     {name = "RVP Group"}
@@ -16,7 +16,7 @@ keywords = ["slam", "robotics", "belief-propagation", "factor-graph", "optimizat
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: BSD License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
@@ -46,7 +46,11 @@ cmake.args = ["-DGSOLVER_BUILD_PYTHON=ON", "-DGSOLVER_BUILD_EXAMPLES=OFF", "-DGS
 
 [tool.scikit-build.wheel]
 install-dir = "gsolver"
-packages = ["python"]
+# The only pure-Python file is python/__init__.py, installed into the package by
+# python/CMakeLists.txt (install-dir is "gsolver", so it lands as gsolver/__init__.py
+# alongside the compiled _gsolver module). An empty list disables package
+# auto-discovery, which would otherwise pick up the C++ "gsolver/" source directory.
+packages = []
 
 [tool.pytest.ini_options]
 testpaths = ["python/tests"]

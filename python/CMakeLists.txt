@@ -57,3 +57,10 @@ target_link_libraries(_gsolver
 install(TARGETS _gsolver
     LIBRARY DESTINATION .
 )
+
+# Install the Python package initializer (re-exports the compiled _gsolver symbols).
+# DESTINATION "." resolves to the wheel install-dir ("gsolver"), so this lands as
+# gsolver/__init__.py — without it, `from gsolver import ...` fails after pip install.
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
+    DESTINATION .
+)

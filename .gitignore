@@ -6,3 +6,15 @@ tmp/
 
 # Generated synthetic datasets (recreate with examples/data/generators/generate_all_datasets.sh)
 examples/data/datasets/synthetic/
+
+# Python virtual environments
+.venv/
+venv/
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Build/distribution
+dist/
+*.egg-info/
